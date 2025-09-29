@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MenteSerena - Chatbot de Apoyo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '💙';
+            font-size: 24px;
+            position: absolute;
+            left: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 300;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeInMessage 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeInMessage {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .bot-message {
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 15px 18px;
+            border-radius: 20px;
+            word-wrap: break-word;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .user-message .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message .message-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e1e8ed;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e1e8ed;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 15px 18px;
+            border: 2px solid #e1e8ed;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .input-field:focus {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-button {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .send-button:active {
+            transform: scale(0.95);
+        }
+
+        .loading {
+            display: none;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .loading .message-bubble {
+            background: white;
+            border: 1px solid #e1e8ed;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        .welcome-message {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.2);
+        }
+
+        .quick-responses {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 20px;
+        }
+
+        .quick-btn {
+            padding: 8px 15px;
+            background: #f0f8ff;
+            border: 1px solid #667eea;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .quick-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                height: calc(100vh - 20px);
+            }
+            
+            .message-bubble {
+                max-width: 85%;
+            }
+            
+            .quick-responses {
+                margin: 15px 10px;
+            }
+            
+            .input-container {
+                padding: 15px;
+            }
+            
+        }
+         .btn-back {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .btn-back:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-back:active {
+            transform: translateY(0);
+        }
+
+        /* Flecha del botón */
+        .arrow {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        
+    </style>
+    
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>MenteSerena</h1>
+            <p>Tu compañero inteligente para conversar sobre cualquier tema</p>
+        </div>
+        
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h3>¡Hola! 👋</h3>
+                <p>Soy MenteSerena, tu compañero conversacional inteligente. Puedo hablar contigo sobre cualquier tema que te interese: desde cómo te sientes hasta tus hobbies, dudas, curiosidades o simplemente para una charla amena.</p>
+                <p style="margin-top: 10px; font-size: 14px; opacity: 0.9;">
+                    Si necesitas apoyo emocional, también estoy aquí para escucharte. Para situaciones de crisis, siempre busca ayuda profesional.
+                </p>
+            </div>
+            
+            <div class="quick-responses">
+                <button class="quick-btn" onclick="sendQuickMessage('Estoy triste')">Estoy triste</button>
+                <button class="quick-btn" onclick="sendQuickMessage('que sentido tiene la vida?')">que sentido tiene la vida?</button>
+                <button class="quick-btn" onclick="sendQuickMessage('porque debo seguir mi vida?')">porque debo seguir mi vida?</button>
+                <button class="quick-btn" onclick="sendQuickMessage('mi familia me quiere?')">mi familia me quiere?</button>
+                <button class="quick-btn" onclick="sendQuickMessage('Me siento un poco triste')">Me siento un poco triste</button>
+                <button class="quick-btn" onclick="sendQuickMessage('Recomiéndame algo para no sentirme sol@')">Recomiéndame algo para no sentirme sol@</button>
+            </div>
+        </div>
+        
+        <div class="loading" id="loadingIndicator">
+            <div class="message-bubble">
+                <span>MenteSerena está escribiendo</span>
+                <div class="typing-indicator">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" class="input-field" id="messageInput" 
+                   placeholder="Escribe sobre cualquier tema..." 
+                   onkeypress="handleKeyPress(event)">
+            <button class="send-button" onclick="sendMessage()">
+                ➤
+            </button>
+        </div>
+    </div>
+     <button class="btn-back" onclick="goBack()">
+        <span class="arrow">←</span>
+        Cerrar Sesion
+    </button>
+
+    <script>
+        const API_KEY = 'AIzaSyBAokaWHhmqRI9D4a2kRPtvJjz6Ga5wAeM';
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+        
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        
+        // Contexto para conversación amplia y apoyo emocional
+        const systemContext = `Eres MenteSerena, un asistente conversacional inteligente y empático. Puedes hablar sobre cualquier tema y mantener conversaciones naturales y fluidas.
+
+Características de tu personalidad:
+- Eres amigable, empático y conversacional
+- Tienes conocimientos amplios sobre diversos temas
+- se cariñoso y muy tierno con la persona si detectas mucha tristeza
+- Cuando detectes que alguien necesita apoyo emocional, ofreces comprensión y consejos útiles
+- Mantienes conversaciones naturales con preguntas de seguimiento
+- Eres curioso sobre los intereses de la persona
+- Cuestionarios de screening emocional (ansiedad, depresión, estrés)
+- En temas de salud mental, siempre recomiendas buscar ayuda profesional si es necesario
+- comparte mensajes motivacionales
+- si detectas tristeza recomienda que se contacten a este numero de emergencia 3172253657
+- trata de responder algo no tan largo, se lo mas resumido posible
+
+Responde siempre en español de manera natural, como si fueras un amigo inteligente y comprensivo. Haz preguntas de seguimiento para mantener la conversación fluida y muestra interés genuino en lo que te cuenta la persona.`;
+        
+        let conversationHistory = [
+            {
+                role: "user",
+                parts: [{text: systemContext}]
+            },
+            {
+                role: "model",
+                parts: [{text: "Entendido. Soy MenteSerena y estoy aquí para brindarte apoyo emocional de manera empática y comprensiva. Estoy listo para escucharte y ayudarte."}]
+            }
+        ];
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendQuickMessage(message) {
+            messageInput.value = message;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Limpiar input
+            messageInput.value = '';
+
+            // Mostrar mensaje del usuario
+            addMessage(message, 'user');
+
+            // Mostrar indicador de carga
+            showLoading();
+
+            try {
+                // Agregar mensaje a la historia
+                conversationHistory.push({
+                    role: "user",
+                    parts: [{text: message}]
+                });
+
+                // Llamar a la API de Gemini con mejor manejo de errores
+                const requestBody = {
+                    contents: conversationHistory.slice(-10), // Limitar historial para evitar errores
+                    generationConfig: {
+                        temperature: 0.8,
+                        topK: 40,
+                        topP: 0.9,
+                        maxOutputTokens: 1000,
+                    },
+                    safetySettings: [
+                        {
+                            category: "HARM_CATEGORY_HARASSMENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_HATE_SPEECH",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        }
+                    ]
+                };
+
+                console.log('Enviando solicitud a:', `${API_URL}?key=${API_KEY}`);
+                console.log('Datos:', JSON.stringify(requestBody, null, 2));
+
+                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                console.log('Estado de respuesta:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error de API:', errorText);
+                    throw new Error(`Error ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('Respuesta de API:', data);
+                hideLoading();
+
+                if (data.candidates && data.candidates[0]) {
+                    const botResponse = data.candidates[0].content.parts[0].text;
+                    
+                    // Agregar respuesta a la historia
+                    conversationHistory.push({
+                        role: "model",
+                        parts: [{text: botResponse}]
+                    });
+
+                    // Mostrar respuesta del bot
+                    addMessage(botResponse, 'bot');
+                } else {
+                    throw new Error('No se pudo obtener una respuesta válida');
+                }
+
+            } catch (error) {
+                hideLoading();
+                console.error('Error completo:', error);
+                
+                let errorMessage = 'Lo siento, ha ocurrido un error. ';
+                
+                if (error.message.includes('404')) {
+                    errorMessage += 'Parece que hay un problema con la configuración de la API. ';
+                } else if (error.message.includes('403')) {
+                    errorMessage += 'La API key podría no tener los permisos correctos. ';
+                } else if (error.message.includes('429')) {
+                    errorMessage += 'Has alcanzado el límite de requests. Intenta en unos minutos. ';
+                } else {
+                    errorMessage += 'Problema de conexión. ';
+                }
+                
+                errorMessage += 'Por favor, revisa la consola del navegador para más detalles.';
+                addMessage(errorMessage, 'bot');
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'message-bubble';
+            bubbleDiv.innerHTML = formatMessage(text);
+            
+            messageDiv.appendChild(bubbleDiv);
+            chatContainer.appendChild(messageDiv);
+            
+            // Auto scroll
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function formatMessage(text) {
+            // Convertir texto en párrafos y formatear
+            return text
+                .split('\n\n')
+                .map(paragraph => paragraph.trim())
+                .filter(paragraph => paragraph.length > 0)
+                .map(paragraph => `<p style="margin-bottom: 10px;">${paragraph}</p>`)
+                .join('');
+        }
+
+        function showLoading() {
+            loadingIndicator.style.display = 'flex';
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
+        }
+
+        // Enfocar el input al cargar
+        window.onload = function() {
+            messageInput.focus();
+        };
+
+        // Agregar mensaje inicial después de un momento
+        setTimeout(() => {
+            addMessage('¡Hola! 😊 Soy MenteSerena. Puedo conversar contigo sobre lo que quieras: cómo te sientes, tus intereses, preguntas que tengas, o simplemente para charlar. ¿Qué te gustaría hacer hoy?', 'bot');
+        }, 1000);
+
+        function goBack(){
+            window.location.href = "PaginaPrincipal.html";
+        }
+    </script>
+</body>
+</html>
